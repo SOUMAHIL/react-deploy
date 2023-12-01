@@ -1,11 +1,14 @@
 import axios from 'axios'
-import useToken from "../useToken";
+import useToken from "../hooks/useToken";
 import {useNavigate} from "react-router-dom";
+import useUser from "../hooks/useUser";
+import {useAuth} from "../AuthContext";
 
 export default function useAxios() {
     const { token, setToken } = useToken();
     const navigate = useNavigate();
-
+    const { user } = useUser();
+    const { logout } = useAuth();
 
     const instance = axios.create({
         baseURL: 'http://localhost:8081',
@@ -16,6 +19,7 @@ export default function useAxios() {
         config => {
             if(token){
                 config.headers['Authorization'] = token;
+                config.headers['user'] = user;
             }
             return config;
         },
@@ -32,7 +36,7 @@ export default function useAxios() {
         // Any status codes that falls outside the range of 2xx cause this function to trigger
         // Do something with response error
         if (error.response.status === 401){
-            setToken(null);
+            logout();
             navigate("/login")
         }
         return Promise.reject(error);

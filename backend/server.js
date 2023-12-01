@@ -63,6 +63,7 @@ app.post('/login', (req, res) => {
                         .json({
                             status: 'success',
                             user: {
+                                id: data[0].id,
                                 name: data[0].name,
                                 email: data[0].email
                             },
@@ -121,8 +122,8 @@ app.post('/signup', (req, res) => {
 
 // post,get,push,delete//
 app.get("/patients", (req, res) => {
-    const q = "SELECT * from patients ORDER BY id DESC ";
-    db.query(q, (err, data) => {
+    const q = "SELECT * from patients WHERE user_id = ? ORDER BY id DESC";
+    db.query(q, [req.user.id], (err, data) => {
         if (err) {
             console.log(err);
             return res.json(err);
@@ -140,8 +141,8 @@ app.post("/patients", (req, res) => {
     const val_cv = req.body.val_cv;
 
     db.query(
-        "INSERT INTO patients (n_national, ts, sexe, age, date_pre, date_ret_result, val_cv) VALUES(?, ?, ?, ?, ?, ?, ?)",
-        [n_national, ts, sexe, age, date_pre, date_ret_result, val_cv],
+        "INSERT INTO patients (n_national, ts, sexe, age, date_pre, date_ret_result, val_cv) VALUES(?, ?, ?, ?, ?, ?, ?) WHERE user_id = ?",
+        [n_national, ts, sexe, age, date_pre, date_ret_result, val_cv, req.user.id],
         (err, result) => {
             if (err) {
                 console.log(err);
@@ -152,7 +153,7 @@ app.post("/patients", (req, res) => {
 });
 app.get("/patients/:id", (req, res) => {
     const id = req.params.id;
-    db.query("SELECT * from patients where id = ?", id, (err, result) => {
+    db.query("SELECT * from patients where id = ? AND user_id = ?", [id, req.user.id], (err, result) => {
         if (err) {
             console.log(err)
         } else {
@@ -162,7 +163,7 @@ app.get("/patients/:id", (req, res) => {
 });
 app.put("/patient/:id", (req, res) => {
     const patientId = req.params.id;
-    const q = "UPDATE patients SET 'n_national'= ?, 'ts' = ?, 'sexe'=?, 'age'=?, 'date_pre'=?, 'date_ret_result'=?, 'val_cv'=?";
+    const q = "UPDATE patients SET 'n_national'= ?, 'ts' = ?, 'sexe'=?, 'age'=?, 'date_pre'=?, 'date_ret_result'=?, 'val_cv'=? WHERE id = ?";
 
     const values = [
         req.body.n_national,

@@ -5,7 +5,7 @@ import {
     passwordValidator,
 } from "../components/auth/Validator";
 import useAxios from "../../api/axios";
-import useToken from "../../useToken";
+import useToken from "../../hooks/useToken";
 import {useAuth} from "../../AuthContext";
 
 function Login() {
@@ -30,7 +30,7 @@ function Login() {
 
             if (response.data.status === "success") {
                 // Stock le jeton dans le stockage local
-                login(response.data.token);
+                login(response.data);
                 // Redirigez l'utilisateur vers la page d'accueil ou une autre page de succès
                 navigate('/');
             } else {
@@ -44,10 +44,6 @@ function Login() {
             // Vous pouvez également définir un état d'erreur si nécessaire
             alert("Erreur lors de la connexion: " + error.message);
         }
-    }
-
-    const teste = async (event) => {
-        navigate('/')
     }
 
     return (
@@ -78,7 +74,6 @@ function Login() {
                         />
                     </div>
                     <button type='submit' className='btn btn-success w-100 rounded-0'><strong>Log in</strong></button>
-                    <button onClick={teste}>test</button>
                     <p>You agree to our terms and policies</p>
                     <Link to="/signup" className='btn btn-default border w-100 bg-light rounded-0 text-decoration-none'>Create Account</Link>
                 </form>

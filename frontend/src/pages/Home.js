@@ -4,7 +4,7 @@ import {FaBars, FaTimes} from "react-icons/fa";
 import {useRef} from "react";
 import {Form, Link, useNavigate} from "react-router-dom";
 import useAxios from "../api/axios";
-import useToken from "../useToken";
+import useToken from "../hooks/useToken";
 import {useAuth} from "../AuthContext";
 
 function Home() {
