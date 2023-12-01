@@ -72,7 +72,7 @@ function Home() {
                     <div className="col-md-12">
                         <p><Link to="" className="btn btn-secondary mb-2">To Print</Link></p>
                         <p><Link to="" className="btn btn-success mb-2">Send to excel</Link></p>
-                        <p><Link to="/add" className="btn btn-warning mb-2">add new Patient</Link></p>
+                        <p><Link to="/patients/create" className="btn btn-warning mb-2">add new Patient</Link></p>
                         <input type="text" placeholder="Numero National..." className="Search"
                                onChange={(e) => setSearch(e.target.value)}></input>
                         <table className="table table-bordered">
@@ -112,9 +112,9 @@ function Home() {
                                                 <td>{patient.val_cv}</td>
                                                 <td>
 
-                                                    <Link to={'read/${patient.id}'}
+                                                    <Link to={"/patients/" + patient.id}
                                                           className="btn btn-success mx-2">Read</Link>
-                                                    <Link to={'update/${patient.id}'}
+                                                    <Link to={"/patients/" + patient.id + "/edit"}
                                                           className="btn btn-info mx-2">Update</Link>
                                                     <button onClick={e => handleDelete(patient.id)}
                                                             className="btn btn-danger">Delete

@@ -141,8 +141,8 @@ app.post("/patients", (req, res) => {
     const val_cv = req.body.val_cv;
 
     db.query(
-        "INSERT INTO patients (n_national, ts, sexe, age, date_pre, date_ret_result, val_cv) VALUES(?, ?, ?, ?, ?, ?, ?) WHERE user_id = ?",
-        [n_national, ts, sexe, age, date_pre, date_ret_result, val_cv, req.user.id],
+        "INSERT INTO patients (user_id, n_national, ts, sexe, age, date_pre, date_ret_result, val_cv) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+        [req.user.id, n_national, ts, sexe, age, date_pre, date_ret_result, val_cv],
         (err, result) => {
             if (err) {
                 console.log(err);
@@ -161,9 +161,9 @@ app.get("/patients/:id", (req, res) => {
         }
     });
 });
-app.put("/patient/:id", (req, res) => {
+app.put("/patients/:id", (req, res) => {
     const patientId = req.params.id;
-    const q = "UPDATE patients SET 'n_national'= ?, 'ts' = ?, 'sexe'=?, 'age'=?, 'date_pre'=?, 'date_ret_result'=?, 'val_cv'=? WHERE id = ?";
+    const q = "UPDATE patients SET n_national= ?, ts = ?, sexe=?, age=?, date_pre=?, date_ret_result=?, val_cv=? WHERE id = ?";
 
     const values = [
         req.body.n_national,
@@ -172,8 +172,8 @@ app.put("/patient/:id", (req, res) => {
         req.body.age,
         req.body.date_pre,
         req.body.date_ret_result,
-        req.body.val_cv
-
+        req.body.val_cv,
+        patientId
     ];
 
     db.query(q, [...values, patientId], (err, data) => {

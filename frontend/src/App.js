@@ -4,10 +4,12 @@ import Login from './pages/auth/Login';
 import {BrowserRouter, Routes, Route, Navigate, Outlet} from 'react-router-dom';
 import Signup from './pages/auth/Signup';
 import Home from './pages/Home';
-import Add from './pages/patients/Add';
-import Read from './pages/patients/Read';
-import Update from './pages/patients/Update';
+import CreatePatient from './pages/patients/CreatePatient';
+import ShowPatient from './pages/patients/ShowPatient';
+import Update from './pages/patients/EditPatient';
 import {AuthProvider, useAuth} from "./AuthContext";
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 
 function ProtectedRoute() {
     const { token } = useAuth();
@@ -23,20 +25,22 @@ function ProtectedRoute() {
 function App() {
     return (
         <AuthProvider>
-            <div>
-                <BrowserRouter>
-                    <Routes>
-                        <Route path='/login' element={<Login/>}></Route>
-                        <Route path='/signup' element={<Signup/>}></Route>
-                        <Route element={<ProtectedRoute/>}>
-                            <Route path='/' element={<Home/>}></Route>
-                            <Route path='/add' element={<Add/>}></Route>
-                            <Route path='/read/:id' element={<Read/>}></Route>
-                            <Route path='/update/:id' element={<Update/>}></Route>
-                        </Route>
-                    </Routes>
-                </BrowserRouter>
-            </div>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <div>
+                    <BrowserRouter>
+                        <Routes>
+                            <Route path='/login' element={<Login/>}></Route>
+                            <Route path='/signup' element={<Signup/>}></Route>
+                            <Route element={<ProtectedRoute/>}>
+                                <Route path='/' element={<Home/>}></Route>
+                                <Route path='/patients/create' element={<CreatePatient/>}></Route>
+                                <Route path='/patients/:id' element={<ShowPatient/>}></Route>
+                                <Route path='/patients/:id/edit' element={<Update/>}></Route>
+                            </Route>
+                        </Routes>
+                    </BrowserRouter>
+                </div>
+            </LocalizationProvider>
         </AuthProvider>
     )
 }

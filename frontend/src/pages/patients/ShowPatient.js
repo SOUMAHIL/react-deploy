@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import useAxios from "../../api/axios";
 
 
-function Read(){
+function ShowPatient(){
     const {id}= useParams();
     const [patient, setPatient] = useState([]);
     const axios = useAxios();
@@ -50,4 +50,4 @@ function Read(){
     )
 }
 
-export default Read;
+export default ShowPatient;

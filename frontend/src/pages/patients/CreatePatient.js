@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import useAxios from "../../api/axios";
 
-function Add(){
+function CreatePatient(){
     const [patient, setPatient ] = useState({
       n_national: "",
       ts: "",
@@ -78,7 +78,7 @@ function Add(){
     )
 }
 
-export default Add;
+export default CreatePatient;
 
 
 
