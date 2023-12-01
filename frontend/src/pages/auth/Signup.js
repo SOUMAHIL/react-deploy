@@ -1,18 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from 'axios'; // Importez Axios ici
-import Validation from "./SignupValidation";
-
-
-
-
-
-
-
-
+import Validation from "../components/auth/SignupValidation";
+import useAxios from "../../api/axios";
 function Signup(){
-
-
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -20,6 +10,7 @@ function Signup(){
     });
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
+    const axios = useAxios();
 
 
     const handleSubmit = async (event) => {
@@ -32,7 +23,7 @@ function Signup(){
         setErrors({});
 
         try {
-            const response = await axios.post('http://localhost:8081/signup', formData);
+            const response = await axios.post('signup', formData);
             console.log(response.data); // Affichez la réponse du serveur (par exemple, "Données insérées avec succès")
             navigate('/'); // Redirigez l'utilisateur après l'inscription réussie
         } catch (error) {

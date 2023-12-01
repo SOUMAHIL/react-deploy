@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import axios from "axios";
+import useAxios from "../../api/axios";
 
 function Add(){
     const [patient, setPatient ] = useState({
@@ -15,6 +15,7 @@ function Add(){
     });
 
     const navigate = useNavigate();
+    const axios = useAxios();
 
     const handleChange = (e) => {
         const {name, value  } = e.target
@@ -23,8 +24,8 @@ function Add(){
     const handleClick = async (e) => {
         e.preventDefault();
         try {
-           await axios.post("http://localhost:8081/patient", patient);
-           navigate("/home");
+           await axios.post("patients", patient);
+           navigate("/");
 
         }catch (err) {
             console.log(err);

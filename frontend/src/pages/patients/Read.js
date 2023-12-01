@@ -1,16 +1,16 @@
-import axios from "axios";
 import React, { useState } from "react";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
+import useAxios from "../../api/axios";
 
 
 function Read(){
-    
     const {id}= useParams();
     const [patient, setPatient] = useState([]);
+    const axios = useAxios();
 
         useEffect(() =>{
-            axios.get("http://localhost:8081/patientdetails/"+id)
+            axios.get("patientdetails/"+id)
             .then(res => {
                 console.log(res.data)
                 setPatient(res.data[0]);

@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from 'axios'
-import Validation from './LoginValidation';
-
+import {
+    emailValidator,
+    passwordValidator,
+} from "../components/auth/Validator";
+import useAxios from "../../api/axios";
+import useToken from "../../useToken";
+import {useAuth} from "../../AuthContext";
 
 function Login() {
     const [formData, setFormData] = useState({
@@ -11,7 +15,8 @@ function Login() {
     });
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
-
+    const { login } = useAuth();
+    const axios = useAxios();
     const handleInput = (event) => {
         setFormData({ ...formData, [event.target.name]: event.target.value });
     }
@@ -21,22 +26,28 @@ function Login() {
         setErrors({}); // Effacez les erreurs précédentes
 
         try {
-            const response = await axios.post('http://localhost:8081/login',formData);
-            console.log(response.data); // Affichez la réponse du serveur (par exemple, "Succès" ou "Échec")
+            const response = await axios.post('login',formData);
 
-            if (response.data === "Succès") {
+            if (response.data.status === "success") {
+                // Stock le jeton dans le stockage local
+                login(response.data.token);
                 // Redirigez l'utilisateur vers la page d'accueil ou une autre page de succès
-                navigate('/home');
+                navigate('/');
             } else {
                 // Gérez le cas d'échec de connexion ici
                 // Vous pouvez également définir un état d'erreur si nécessaire
-                
+                alert("Email ou mot de passe incorrect");
             }
         } catch (error) {
             console.error(error);
             // Gérez les erreurs de requête ici
             // Vous pouvez également définir un état d'erreur si nécessaire
+            alert("Erreur lors de la connexion: " + error.message);
         }
+    }
+
+    const teste = async (event) => {
+        navigate('/')
     }
 
     return (
@@ -67,6 +78,7 @@ function Login() {
                         />
                     </div>
                     <button type='submit' className='btn btn-success w-100 rounded-0'><strong>Log in</strong></button>
+                    <button onClick={teste}>test</button>
                     <p>You agree to our terms and policies</p>
                     <Link to="/signup" className='btn btn-default border w-100 bg-light rounded-0 text-decoration-none'>Create Account</Link>
                 </form>

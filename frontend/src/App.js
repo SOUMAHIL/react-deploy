@@ -1,33 +1,44 @@
 import logo from './logo.svg';
-import './App.css';
-import Login from './Login';
-import{BrowserRouter, Routes, Route} from 'react-router-dom';
-import Signup from './Signup';
-import Home from './Home';
-import Add from './Add';
-import Read from './Read';
-import Update from './Update';
+import './css/App.css';
+import Login from './pages/auth/Login';
+import {BrowserRouter, Routes, Route, Navigate, Outlet} from 'react-router-dom';
+import Signup from './pages/auth/Signup';
+import Home from './pages/Home';
+import Add from './pages/patients/Add';
+import Read from './pages/patients/Read';
+import Update from './pages/patients/Update';
+import {AuthProvider, useAuth} from "./AuthContext";
+
+function ProtectedRoute() {
+    const { token } = useAuth();
+
+    console.log(token)
+    if (!token) {
+        return <Navigate to="/login" replace/>;
+    }
+
+    return <Outlet/>;
+}
 
 function App() {
-  return (
-    <div>
-      <BrowserRouter>
-        <Routes>
-
-          <Route path='/' element={<Login />} ></Route>
-          <Route path='/signup' element={<Signup/>}></Route>
-          <Route path='/home' element={<Home/>}></Route>
-          <Route path='/add' element={<Add/>}></Route>
-          <Route path='/read/:id' element={<Read/>}></Route>
-          <Route path='/update/:id' element={<Update/>}></Route>
-          </Routes>
-                                   
-      </BrowserRouter>
-
-      
-
-    </div>
-  )
-} 
+    return (
+        <AuthProvider>
+            <div>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path='/login' element={<Login/>}></Route>
+                        <Route path='/signup' element={<Signup/>}></Route>
+                        <Route element={<ProtectedRoute/>}>
+                            <Route path='/' element={<Home/>}></Route>
+                            <Route path='/add' element={<Add/>}></Route>
+                            <Route path='/read/:id' element={<Read/>}></Route>
+                            <Route path='/update/:id' element={<Update/>}></Route>
+                        </Route>
+                    </Routes>
+                </BrowserRouter>
+            </div>
+        </AuthProvider>
+    )
+}
 
 export default App;
