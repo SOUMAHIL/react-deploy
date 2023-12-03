@@ -8,6 +8,8 @@ import useToken from "../hooks/useToken";
 import {useAuth} from "../AuthContext";
 import * as XLSX from 'xlsx'
 import {usePDF} from 'react-to-pdf';
+import DataTable from 'react-data-table-component';
+
 
 function Home() {
     const [patient, setPatient] = useState([]);
@@ -57,6 +59,44 @@ function Home() {
         XLSX.writeFile(workbook, "DataSheet.xlsx");
     }
 
+    const columns = [
+        {
+            name: 'N_National',
+            selector: 'n_national',
+            sortable: true,
+        },
+        {
+            name: 'TS',
+            selector: 'ts',
+            sortable: true,
+        },
+        {
+            name: 'Sexe',
+            selector: 'sexe',
+            sortable: true,
+        },
+        {
+            name: 'Age',
+            selector: 'age',
+            sortable: true,
+        },
+        {
+            name: 'Date_Pre',
+            selector: 'date_pre',
+            sortable: true,
+        },
+        {
+            name: 'Date_Ret_Result',
+            selector: 'date_ret_result',
+            sortable: true,
+        },
+        {
+            name: 'Val_Cv',
+            selector: 'val_cv',
+            sortable: true,
+        },
+    ];
+
     return (
         <div>
             <div className="header">
@@ -90,57 +130,19 @@ function Home() {
                             </div>
                         </div>
 
-                        <table ref={targetRef} className="table table-bordered">
-                            <thead>
-                            <tr>
-                                <th>Id</th>
-                                <th>N_Natiional</th>
-                                <th>Ts</th>
-                                <th>Sexe</th>
-                                <th>Age</th>
-                                <th>Date_Pre</th>
-                                <th>Date_Ret_Result</th>
-                                <th>Val Cv</th>
-                                <th>Actions</th>
-
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {
-                                patient.filter((patient) => {
-                                        return search.toLocaleLowerCase() === ''
-                                            ? patient
-                                            : patient.n_national.toLocaleLowerCase().includes(search);
-
-                                    }
-                                )
-                                    .map((patient, i) => {
-                                        return (
-                                            <tr key={i}>
-                                                <td>{i + 1}</td>
-                                                <td>{patient.n_national}</td>
-                                                <td>{patient.ts}</td>
-                                                <td>{patient.sexe}</td>
-                                                <td>{patient.age}</td>
-                                                <td>{patient.date_pre}</td>
-                                                <td>{patient.date_ret_result}</td>
-                                                <td>{patient.val_cv}</td>
-                                                <td>
-                                                    <Link to={"/patients/" + patient.id}
-                                                          className="btn btn-success mx-2">Read</Link>
-                                                    <Link to={"/patients/" + patient.id + "/edit"}
-                                                          className="btn btn-info mx-2">Update</Link>
-                                                    <button onClick={e => handleDelete(patient.id)}
-                                                            className="btn btn-danger">Delete
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })
-                            }
-                            </tbody>
-
-                        </table>
+                        <DataTable ref={targetRef}
+                                   columns={columns}
+                                   data={patient.filter((val) => {
+                                       if (search === "") {
+                                           return val
+                                       } else if (val.n_national.toLowerCase().includes(search.toLowerCase())) {
+                                           return val
+                                       }
+                                   })}
+                                   pagination={true}
+                                   paginationPerPage={10}
+                                   paginationRowsPerPageOptions={[10, 20, 30]}
+                                   paginationComponentOptions={{rowsPerPageText: 'rows per page'}}/>
 
                     </div>
                 </div>
