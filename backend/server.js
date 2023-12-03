@@ -1,78 +1,129 @@
 const express = require("express");
-const mysql = require("mysql2");
+require('dotenv').config()
 const cors = require("cors");
+const bcrypt = require("bcrypt")
+var jwt = require('jsonwebtoken');
+const restrictMiddleware = require("./restrict");
+const {db} = require("./database");
+const util = require("util");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+}));
+
 app.use(express.json());
-// Signup and login
-const db = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "",
-    port: "3306",
-    database: "signup"
-});
 
-db.connect((err) => {
-    if (err) {
-        console.error("Erreur de connexion à la base de données:", err);
-        return;
-    }
-    console.log("Connexion à la base de données réussie");
-});
+const saltRounds = 10
 
-app.get('/', (req, res) => {
+const dbQuery = util.promisify(db.query).bind(db);
+
+
+app.get('/', async (req, res) => {
     res.send("Bonjour, ceci est un petit message sur l'endpoint /");
 });
 
-app.post('/signup', (req, res) => {
-    console.log(req.body);
-    const sql = "INSERT INTO login (name, email, password) VALUES (?, ?, ?)"; // Corrected SQL query
-    const values = [
-        req.body.name,
-        req.body.email,
-        req.body.password
-    ];
-    db.query(sql, values, (err, data) => { // Removed array brackets around 'values'
+
+app.post('/login', async (req, res) => {
+    const sql = "SELECT * FROM users WHERE email = ? "; // Corrected SQL query
+    await dbQuery(sql, [req.body.email, req.body.password], (err, data) => {
         if (err) {
-            console.error("Erreur lors de l'insertion des données:", err);
-            return res.json("Erreur");
+            console.error("Erreur lors de la requête de connexion:", err);
+            return res.status(500).json('Erreur lors de la connexion');
         }
-        return res.json("Données insérées avec succès");
+        if (data.length > 0) {
+            // Compare the password with the hash
+            bcrypt.compare(req.body.password, data[0].password, async (err, result) => {
+                if (err) {
+                    console.error("Erreur lors de la comparaison des mots de passe:", err);
+                    return res.json({
+                        status: 'error',
+                        error: "Erreur: " + err.message
+                    });
+                }
+                if (result) {
+                    // Generate a random token and store it in the database
+                    const email = data[0].email;
+                    const token = jwt.sign({email}, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+
+                    const sql = "UPDATE users SET token = ? WHERE email = ?";
+                    await dbQuery(sql, [token, email], (err) => {
+                        if (err) {
+                            console.error("Erreur lors de la mise à jour du token:", err);
+                            return res.json("Erreur" + err.message);
+                        }
+                        return res.status(200)
+                            .json({
+                                status: 'success',
+                                user: {
+                                    id: data[0].id,
+                                    name: data[0].name,
+                                    email: data[0].email
+                                },
+                                token: token
+                            });
+                    });
+                } else {
+                    return res.json("Email ou mot de passe incorrect");
+                }
+            });
+        } else {
+            return res.json("Email ou mot de passe incorrect");
+        }
     });
 });
 
-app.post('/login', (req, res) => {
-    const sql = "SELECT * FROM login WHERE email = ? AND password = ?"; // Corrected SQL query
-    db.query(sql, [req.body.email, req.body.password], (err, data) => {
+app.post('/signup', async (req, res) => {
+    // check if email already exists
+    const sql = "SELECT * FROM users WHERE email = ?";
+    await dbQuery(sql, [req.body.email], (err, data) => {
         if (err) {
-            console.error("Erreur lors de la requête de connexion:", err);
+            console.error("Erreur lors de la recherche de l'email:", err);
             return res.json("Erreur");
         }
         if (data.length > 0) {
-            return res.json("Succès");
-        } else {
-            return res.json("Échec");
+            return res.status(409).json("Email déjà utilisé");
         }
+        bcrypt.hash(req.body.password, saltRounds, async(err, hash) => {
+            if (err) {
+                console.error("Erreur lors du hashage du mot de passe:", err);
+                return res.json("Erreur");
+            }
+            const sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
+            const values = [
+                req.body.name,
+                req.body.email,
+                hash
+            ];
+            await dbQuery(sql, values, (err, data) => {
+                if (err) {
+                    console.error("Erreur lors de l'insertion des données:", err);
+                    return res.json("Erreur");
+                }
+                return res.json("Données insérées avec succès");
+            });
+        });
     });
 });
 
 
+// Protected routes
+app.use(restrictMiddleware);
+
+
 // post,get,push,delete//
-
-
-app.get("/patient",(req, res) =>{
-    const q= "SELECT * from patient ORDER BY id DESC " ;
-    db.query(q, (err, data) => {
-        if(err){
+app.get("/patients", async (req, res) => {
+    const q = "SELECT * from patients WHERE user_id = ? ORDER BY id DESC";
+    await dbQuery(q, [req.user.id], (err, data) => {
+        if (err) {
             console.log(err);
             return res.json(err);
         }
         return res.json(data);
     })
 })
-app.post("/patient", (req, res) => {
+app.post("/patients", async (req, res) => {
     const n_national = req.body.n_national;
     const ts = req.body.ts;
     const sexe = req.body.sexe;
@@ -81,64 +132,60 @@ app.post("/patient", (req, res) => {
     const date_ret_result = req.body.date_ret_result;
     const val_cv = req.body.val_cv;
 
-    db.query(
-        "INSERT INTO patient (n_national, ts, sexe, age, date_pre, date_ret_result, val_cv) VALUES(?, ?, ?, ?, ?, ?, ?)",
-        [n_national, ts, sexe, age, date_pre, date_ret_result, val_cv],
+    await dbQuery(
+        "INSERT INTO patients (user_id, n_national, ts, sexe, age, date_pre, date_ret_result, val_cv) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
+        [req.user.id, n_national, ts, sexe, age, date_pre, date_ret_result, val_cv],
         (err, result) => {
-            if(err){
+            if (err) {
                 console.log(err);
-            }else{
+            } else {
                 res.send("you have registered successfully");
             }
         })
 });
-app.get("/patientdetails/:id",(req, res)=>{
-       const id = req.params.id;
-       db.query("SELECT * from patient where id = ?", id, (err, result) => {
-        if(err){
+app.get("/patients/:id", async (req, res) => {
+    const id = req.params.id;
+    await dbQuery("SELECT * from patients where id = ? AND user_id = ?", [id, req.user.id], (err, result) => {
+        if (err) {
             console.log(err)
-        }else{
+        } else {
             res.send(result);
         }
-       });
+    });
 });
-app.put("/patient/:id", (req, res) => {
+app.put("/patients/:id", async (req, res) => {
     const patientId = req.params.id;
-    const q = "UPDATE patient SET 'n_national'= ?, 'ts' = ?, 'sexe'=?, 'age'=?, 'date_pre'=?, 'date_ret_result'=?, 'val_cv'=?"; 
+    const q = "UPDATE patients SET n_national= ?, ts = ?, sexe=?, age=?, date_pre=?, date_ret_result=?, val_cv=? WHERE id = ?";
 
-    const values =[
-    req.body.n_national,
-    req.body.ts,
-    req.body.sexe,
-    req.body.age,
-    req.body.date_pre,
-    req.body.date_ret_result,
-    req.body.val_cv
-
+    const values = [
+        req.body.n_national,
+        req.body.ts,
+        req.body.sexe,
+        req.body.age,
+        req.body.date_pre,
+        req.body.date_ret_result,
+        req.body.val_cv,
+        patientId
     ];
 
-    db.query(q, [...values,patientId], (err, data) => {
-      if(err) return res.send(err);
-      return res.json(data);
+    await dbQuery(q, [...values, patientId], (err, data) => {
+        if (err) return res.send(err);
+        return res.json(data);
     });
 });
 
-app.delete("/patient/:id", (req, res) => {
+app.delete("/patients/:id", async (req, res) => {
     const patientId = req.params.id;
-    const q = "DELETE FROM patient WHERE id = ? ";
+    const q = "DELETE FROM patients WHERE id = ? ";
 
-    db.query(q, [patientId], (err, data) => {
-        if(err) return res.json(err);
+    await dbQuery(q, [patientId], (err, data) => {
+        if (err) return res.json(err);
         return res.json(data);
-      });
+    });
 });
 
 
-
-
-
 // .....
-
 
 
 app.listen(8081, () => {

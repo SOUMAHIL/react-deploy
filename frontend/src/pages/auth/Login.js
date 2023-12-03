@@ -1,8 +1,13 @@
-import React, { useState } from "react";
+import React, {useEffect, useState} from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from 'axios'
-import Validation from './LoginValidation';
-
+import {
+    emailValidator,
+    passwordValidator,
+} from "../components/auth/Validator";
+import useAxios from "../../api/axios";
+import useToken from "../../hooks/useToken";
+import {useAuth} from "../../AuthContext";
+import Validation from "../components/auth/LoginValidation";
 
 function Login() {
     const [formData, setFormData] = useState({
@@ -11,32 +16,46 @@ function Login() {
     });
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
+    const { login } = useAuth();
+    const axios = useAxios();
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (Object.keys(errors).length === 0 && submitting) {
+            finishSubmit();
+        }
+    }, [errors]);
 
     const handleInput = (event) => {
         setFormData({ ...formData, [event.target.name]: event.target.value });
     }
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        setErrors({}); // Effacez les erreurs précédentes
-
+    const finishSubmit = async () => {
         try {
-            const response = await axios.post('http://localhost:8081/login',formData);
-            console.log(response.data); // Affichez la réponse du serveur (par exemple, "Succès" ou "Échec")
+            const response = await axios.post('login',formData);
 
-            if (response.data === "Succès") {
+            if (response.data.status === "success") {
+                // Stock le jeton dans le stockage local
+                login(response.data);
                 // Redirigez l'utilisateur vers la page d'accueil ou une autre page de succès
-                navigate('/home');
+                navigate('/');
             } else {
                 // Gérez le cas d'échec de connexion ici
                 // Vous pouvez également définir un état d'erreur si nécessaire
-                
+                alert("Email ou mot de passe incorrect");
             }
         } catch (error) {
             console.error(error);
             // Gérez les erreurs de requête ici
             // Vous pouvez également définir un état d'erreur si nécessaire
+            alert("Erreur lors de la connexion: " + error.message);
         }
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        setErrors(Validation(formData));
+        setSubmitting(true);
     }
 
     return (
@@ -52,8 +71,9 @@ function Login() {
                             name='email'
                             value={formData.email}
                             onChange={handleInput}
-                            className='form-control rounded-0'
+                            className={'form-control rounded-0 ' + (errors.email ? 'is-invalid' : '')}
                         />
+                        <div className='text-danger'>{errors.email}</div>
                     </div>
                     <div className='mb-3'>
                         <label htmlFor='password'><strong>Password</strong> </label>
@@ -63,8 +83,9 @@ function Login() {
                             name='password'
                             value={formData.password}
                             onChange={handleInput}
-                            className='form-control rounded-0'
+                            className={'form-control rounded-0 ' + (errors.password ? 'is-invalid' : '')}
                         />
+                        <div className='text-danger'>{errors.password}</div>
                     </div>
                     <button type='submit' className='btn btn-success w-100 rounded-0'><strong>Log in</strong></button>
                     <p>You agree to our terms and policies</p>
