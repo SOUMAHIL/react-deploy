@@ -6,13 +6,17 @@ import {Form, Link, useNavigate} from "react-router-dom";
 import useAxios from "../api/axios";
 import useToken from "../hooks/useToken";
 import {useAuth} from "../AuthContext";
+import * as XLSX from 'xlsx'
+import {usePDF} from 'react-to-pdf';
 
 function Home() {
     const [patient, setPatient] = useState([]);
     const [search, setSearch] = useState('');
     const axios = useAxios();
-    const { logout } = useAuth();
+    const {logout} = useAuth();
     const navigate = useNavigate();
+    const {toPDF, targetRef} = usePDF({filename: 'page.pdf'});
+
 
     useEffect(() => {
         const fetchAllPatient = async () => {
@@ -46,6 +50,12 @@ function Home() {
         navigate("/login")
     }
 
+    const exportToExcel = () => {
+        const worksheet = XLSX.utils.json_to_sheet(patient);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+        XLSX.writeFile(workbook, "DataSheet.xlsx");
+    }
 
     return (
         <div>
@@ -70,12 +80,17 @@ function Home() {
                 <h2 className="W-100 d-flex justify-content-center p-3">SAISIR DES PRELEVEMENTS DE CV</h2>
                 <div className="row">
                     <div className="col-md-12">
-                        <p><Link to="" className="btn btn-secondary mb-2">To Print</Link></p>
-                        <p><Link to="" className="btn btn-success mb-2">Send to excel</Link></p>
-                        <p><Link to="/patients/create" className="btn btn-warning mb-2">add new Patient</Link></p>
-                        <input type="text" placeholder="Numero National..." className="Search"
-                               onChange={(e) => setSearch(e.target.value)}></input>
-                        <table className="table table-bordered">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <input type="text" placeholder="Numero National..." className="Search"
+                                   onChange={(e) => setSearch(e.target.value)}></input>
+                            <div className="d-flex gap-3">
+                                <button className="btn btn-secondary" onClick={() => toPDF()}>To Print</button>
+                                <button className="btn btn-success" onClick={exportToExcel}>Send to excel</button>
+                                <Link to="/patients/create" className="btn btn-warning">add new Patient</Link>
+                            </div>
+                        </div>
+
+                        <table ref={targetRef} className="table table-bordered">
                             <thead>
                             <tr>
                                 <th>Id</th>
@@ -93,12 +108,12 @@ function Home() {
                             <tbody>
                             {
                                 patient.filter((patient) => {
-                                            return search.toLocaleLowerCase() === ''
-                                                ? patient
-                                                : patient.n_national.toLocaleLowerCase().includes(search);
+                                        return search.toLocaleLowerCase() === ''
+                                            ? patient
+                                            : patient.n_national.toLocaleLowerCase().includes(search);
 
-                                        }
-                                    )
+                                    }
+                                )
                                     .map((patient, i) => {
                                         return (
                                             <tr key={i}>
@@ -111,7 +126,6 @@ function Home() {
                                                 <td>{patient.date_ret_result}</td>
                                                 <td>{patient.val_cv}</td>
                                                 <td>
-
                                                     <Link to={"/patients/" + patient.id}
                                                           className="btn btn-success mx-2">Read</Link>
                                                     <Link to={"/patients/" + patient.id + "/edit"}
@@ -119,12 +133,9 @@ function Home() {
                                                     <button onClick={e => handleDelete(patient.id)}
                                                             className="btn btn-danger">Delete
                                                     </button>
-
                                                 </td>
-
                                             </tr>
                                         )
-
                                     })
                             }
                             </tbody>

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, {useEffect, useState} from "react";
+import {Link, useNavigate} from "react-router-dom";
 import Validation from "../components/auth/SignupValidation";
 import useAxios from "../../api/axios";
-function Signup(){
+
+function Signup() {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -11,29 +12,29 @@ function Signup(){
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
     const axios = useAxios();
+    const [submitting, setSubmitting] = useState(false);
 
-
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        
-        let error = Validation(formData);
-        setErrors(error)
-
-        // Effacez les erreurs précédentes
-        setErrors({});
-
-        try {
-            const response = await axios.post('signup', formData);
-            console.log(response.data); // Affichez la réponse du serveur (par exemple, "Données insérées avec succès")
-            navigate('/'); // Redirigez l'utilisateur après l'inscription réussie
-        } catch (error) {
-            if (error.response && error.response.data) {
-                setErrors(error.response.data);
-            }
-            console.error(error);
+    useEffect(() => {
+        if (Object.keys(errors).length === 0 && submitting) {
+            finishSubmit();
         }
+    }, [errors]);
+
+    const finishSubmit = async () => {
+        const response = await axios.post('signup', formData).then((response) => {
+            console.log(response);
+            navigate('/');
+        }).catch((error) => {
+            console.log(error);
+            alert("Erreur lors de la création de compte: " + error.response.data)
+        });
     }
-    
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        setErrors(Validation(formData));
+        setSubmitting(true);
+    }
+
     return (
         <div className='d-flex justify-content-center align-items-center bg-primary vh-100'>
             <div className='bg-white p-3 rounded w-25'>
@@ -46,10 +47,10 @@ function Signup(){
                             placeholder='Enter Name'
                             name='name'
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            className='form-control rounded-0'
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            className={'form-control rounded-0 ' + (errors.name ? 'is-invalid' : '')}
                         />
-                        {errors.name && <span className='text-danger'>{errors.name}</span>}
+                        <div className='text-danger'>{errors.name}</div>
                     </div>
                     <div className='mb-3'>
                         <label htmlFor='email'><strong>Email</strong></label>
@@ -58,10 +59,10 @@ function Signup(){
                             placeholder='Enter Email'
                             name='email'
                             value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            className='form-control rounded-0'
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            className={'form-control rounded-0 ' + (errors.email ? 'is-invalid' : '')}
                         />
-                        {errors.email && <span className='text-danger'>{errors.email}</span>}
+                        <div className='text-danger'>{errors.email}</div>
                     </div>
                     <div className='mb-3'>
                         <label htmlFor='password'><strong>Password</strong></label>
@@ -70,14 +71,15 @@ function Signup(){
                             placeholder='Enter Password'
                             name='password'
                             value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            className='form-control rounded-0'
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                            className={'form-control rounded-0 ' + (errors.password ? 'is-invalid' : '')}
                         />
-                        {errors.password && <span className='text-danger'>{errors.password}</span>}
+                        <div className='text-danger'>{errors.password}</div>
                     </div>
                     <button type="submit" className='btn btn-success w-100 rounded-0'><strong>Sign up</strong></button>
                     <p>You agree to our terms and policies</p>
-                    <Link to="/" className='btn btn-default border w-100 bg-light rounded-0 text-decoration-none'>Login</Link>
+                    <Link to="/"
+                          className='btn btn-default border w-100 bg-light rounded-0 text-decoration-none'>Login</Link>
                 </form>
             </div>
         </div>

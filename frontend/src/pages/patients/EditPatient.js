@@ -95,7 +95,7 @@ function EditPatient() {
                                    className="form-control" onChange={handleChange} value={patient.val_cv}/>
                         </div>
                         <button type="submit" className="btn btn-primary" onClick={handleClick}> Edit Patient</button>
-                        <Link to="/Home">see all Home</Link>
+                        <Link to="/">see all Home</Link>
                     </form>
 
                 </div>

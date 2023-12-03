@@ -69,7 +69,7 @@ function CreatePatient(){
                         <input type="text" placeholder="Enter Val_Cv" id="val_cv" name="val_cv" className="form-control" onChange={handleChange} ></input>
                     </div>
                     <button type="submit" className="btn btn-primary" onClick={handleClick}> Add Patient</button>
-                    <Link to="/Home">see all Home</Link>
+                    <Link to="/">see all Home</Link>
                 </form>
 
             </div>
