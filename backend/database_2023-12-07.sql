@@ -7,7 +7,7 @@
 #
 # Host: localhost (MySQL 8.1.0)
 # Database: soumahil
-# Generation Time: 2023-12-03 15:19:36 +0000
+# Generation Time: 2023-12-07 09:44:07 +0000
 # ************************************************************
 
 
@@ -18,6 +18,26 @@ SET NAMES utf8mb4;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE='NO_AUTO_VALUE_ON_ZERO', SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+
+# Dump of table patients
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `patients`;
+
+CREATE TABLE `patients` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `n_national` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+  `ts` varchar(64) DEFAULT NULL,
+  `sexe` varchar(64) DEFAULT NULL,
+  `age` varchar(64) DEFAULT NULL,
+  `date_pre` date DEFAULT NULL,
+  `date_ret_result` date DEFAULT NULL,
+  `val_cv` varchar(64) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 
 
 # Dump of table users
