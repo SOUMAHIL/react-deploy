@@ -11,7 +11,7 @@ export default function useAxios() {
     const { logout } = useAuth();
 
     const instance = axios.create({
-        baseURL: 'http://localhost:8081',
+        baseURL: 'https://patients-app-api.cyber-forge-development.com',
         withCredentials: true,
     });
 

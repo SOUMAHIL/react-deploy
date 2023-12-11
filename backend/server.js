@@ -1,15 +1,17 @@
 const express = require("express");
 require('dotenv').config()
 const cors = require("cors");
-const bcrypt = require("bcrypt")
 var jwt = require('jsonwebtoken');
 const restrictMiddleware = require("./restrict");
 const {db} = require("./database");
 const util = require("util");
+var bcrypt = require('bcryptjs');
+
 
 const app = express();
 app.use(cors({
-    origin: 'http://localhost:3000',
+    // origin: 'http://localhost:3000',
+    origin: 'https://mon-app-reactjs.com',
     credentials: true
 }));
 
@@ -19,18 +21,12 @@ const saltRounds = 10
 
 const dbQuery = util.promisify(db.query).bind(db);
 
-
-app.get('/', async (req, res) => {
-    res.send("Bonjour, ceci est un petit message sur l'endpoint /");
-});
-
-
 app.post('/login', async (req, res) => {
     const sql = "SELECT * FROM users WHERE email = ? "; // Corrected SQL query
     await dbQuery(sql, [req.body.email, req.body.password], (err, data) => {
         if (err) {
             console.error("Erreur lors de la requête de connexion:", err);
-            return res.status(500).json('Erreur lors de la connexion');
+            return res.status(500).json('Erreur lors de la connexion :' + err.message);
         }
         if (data.length > 0) {
             // Compare the password with the hash
@@ -188,6 +184,4 @@ app.delete("/patients/:id", async (req, res) => {
 // .....
 
 
-app.listen(8081, () => {
-    console.log("Le serveur écoute sur le port 8081");
-});
+app.listen(8080);
