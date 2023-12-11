@@ -22,12 +22,10 @@ function Home() {
 
     useEffect(() => {
         const fetchAllPatient = async () => {
-            try {
-                const res = await axios.get("patients")
-                setPatient(res.data);
-            } catch (err) {
-                console.log(err)
-            }
+            await axios.get("patients").then((response) => {
+                console.log(response.data)
+                setPatient(response.data);
+            });
         };
         fetchAllPatient();
     }, []);
@@ -62,38 +60,48 @@ function Home() {
     const columns = [
         {
             name: 'N_National',
-            selector: 'n_national',
+            selector: row => row.n_national,
             sortable: true,
         },
         {
             name: 'TS',
-            selector: 'ts',
+            selector: row => row.ts,
             sortable: true,
         },
         {
             name: 'Sexe',
-            selector: 'sexe',
+            selector: row => row.sexe,
             sortable: true,
         },
         {
             name: 'Age',
-            selector: 'age',
+            selector: row => row.age,
             sortable: true,
         },
         {
             name: 'Date_Pre',
-            selector: 'date_pre',
+            selector: row => row.date_pre,
             sortable: true,
         },
         {
             name: 'Date_Ret_Result',
-            selector: 'date_ret_result',
+            selector: row => row.date_ret_result,
             sortable: true,
         },
         {
             name: 'Val_Cv',
-            selector: 'val_cv',
+            selector: row => row.val_cv,
             sortable: true,
+        },
+        {
+            name: 'Action',
+            cell: row =>
+                <div className="d-flex gap-2">
+                    <Link to={`/patients/${row.id}/edit`} className="btn btn-warning">Edit</Link>
+                    <button className="btn btn-danger" onClick={() => handleDelete(row.id)}>Delete</button>
+                </div>,
+            sortable: true,
+            width: '20%'
         },
     ];
 
@@ -130,20 +138,20 @@ function Home() {
                             </div>
                         </div>
 
-                        <DataTable ref={targetRef}
-                                   columns={columns}
-                                   data={patient.filter((val) => {
-                                       if (search === "") {
-                                           return val
-                                       } else if (val.n_national.toLowerCase().includes(search.toLowerCase())) {
-                                           return val
-                                       }
-                                   })}
-                                   pagination={true}
-                                   paginationPerPage={10}
-                                   paginationRowsPerPageOptions={[10, 20, 30]}
-                                   paginationComponentOptions={{rowsPerPageText: 'rows per page'}}/>
-
+                        <div ref={targetRef}>
+                            <DataTable columns={columns}
+                                       data={patient.filter((val) => {
+                                           if (search === "") {
+                                               return val
+                                           } else if (val.n_national.toLowerCase().includes(search.toLowerCase())) {
+                                               return val
+                                           }
+                                       })}
+                                       pagination={true}
+                                       paginationPerPage={10}
+                                       paginationRowsPerPageOptions={[10, 20, 30]}
+                                       paginationComponentOptions={{rowsPerPageText: 'rows per page'}}/>
+                        </div>
                     </div>
                 </div>
             </div>

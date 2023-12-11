@@ -3,15 +3,15 @@ require('dotenv').config()
 const cors = require("cors");
 var jwt = require('jsonwebtoken');
 const restrictMiddleware = require("./restrict");
-const {db} = require("./database");
+const {pool} = require("./database");
 const util = require("util");
 var bcrypt = require('bcryptjs');
 
 
 const app = express();
 app.use(cors({
-    // origin: 'http://localhost:3000',
-    origin: 'https://mon-app-reactjs.com',
+    origin: 'http://localhost:3000',
+    // origin: 'https://mon-app-reactjs.com',
     credentials: true
 }));
 
@@ -19,87 +19,69 @@ app.use(express.json());
 
 const saltRounds = 10
 
-const dbQuery = util.promisify(db.query).bind(db);
 
 app.post('/login', async (req, res) => {
     const sql = "SELECT * FROM users WHERE email = ? "; // Corrected SQL query
-    await dbQuery(sql, [req.body.email, req.body.password], (err, data) => {
-        if (err) {
-            console.error("Erreur lors de la requête de connexion:", err);
-            return res.status(500).json('Erreur lors de la connexion :' + err.message);
-        }
-        if (data.length > 0) {
-            // Compare the password with the hash
-            bcrypt.compare(req.body.password, data[0].password, async (err, result) => {
-                if (err) {
-                    console.error("Erreur lors de la comparaison des mots de passe:", err);
-                    return res.json({
-                        status: 'error',
-                        error: "Erreur: " + err.message
-                    });
-                }
-                if (result) {
-                    // Generate a random token and store it in the database
-                    const email = data[0].email;
-                    const token = jwt.sign({email}, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+    await pool.promise().query(sql, [req.body.email, req.body.password]).then(([data]) => {
+        bcrypt.compare(req.body.password, data[0].password).then(async (result) => {
+            console.log("erf")
 
-                    const sql = "UPDATE users SET token = ? WHERE email = ?";
-                    await dbQuery(sql, [token, email], (err) => {
-                        if (err) {
-                            console.error("Erreur lors de la mise à jour du token:", err);
-                            return res.json("Erreur" + err.message);
-                        }
-                        return res.status(200)
-                            .json({
-                                status: 'success',
-                                user: {
-                                    id: data[0].id,
-                                    name: data[0].name,
-                                    email: data[0].email
-                                },
-                                token: token
-                            });
-                    });
-                } else {
-                    return res.json("Email ou mot de passe incorrect");
-                }
+            // Generate a random token and store it in the database
+            const email = data[0].email;
+            const token = jwt.sign({email}, process.env.JWT_SECRET, {expiresIn: process.env.JWT_EXPIRES_IN});
+
+            const sql = "UPDATE users SET token = ? WHERE email = ?";
+            await pool.promise().query(sql, [token, email]).then(() => {
+                return res.json({
+                    status: 'success',
+                    user: {
+                        id: data[0].id,
+                        name: data[0].name,
+                        email: data[0].email
+                    },
+                    token: token,
+                });
+            }).catch((err) => {
+                console.error("Erreur lors de la mise à jour du token:", err);
+                return res.json({
+                    status: 'error',
+                    error: "Erreur: " + err.message
+                });
             });
-        } else {
-            return res.json("Email ou mot de passe incorrect");
-        }
-    });
+        }).catch((err) => {
+            console.error("Erreur lors de la comparaison des mots de passe:", err);
+            return res.json({
+                status: 'error',
+                error: "Erreur: " + err.message
+            });
+        });
+    }).catch((err) => {
+        console.log(err);
+    })
 });
 
 app.post('/signup', async (req, res) => {
     // check if email already exists
     const sql = "SELECT * FROM users WHERE email = ?";
-    await dbQuery(sql, [req.body.email], (err, data) => {
-        if (err) {
-            console.error("Erreur lors de la recherche de l'email:", err);
-            return res.json("Erreur");
-        }
+    await pool.promise().query(sql, [req.body.email]).then(([data]) => {
         if (data.length > 0) {
-            return res.status(409).json("Email déjà utilisé");
+            res.status(400);
+            return res.json("Email déjà utilisé");
         }
-        bcrypt.hash(req.body.password, saltRounds, async(err, hash) => {
-            if (err) {
-                console.error("Erreur lors du hashage du mot de passe:", err);
-                return res.json("Erreur");
-            }
+        bcrypt.hash(req.body.password, saltRounds, async (err, hash) => {
             const sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
             const values = [
                 req.body.name,
                 req.body.email,
                 hash
             ];
-            await dbQuery(sql, values, (err, data) => {
-                if (err) {
-                    console.error("Erreur lors de l'insertion des données:", err);
-                    return res.json("Erreur");
-                }
-                return res.json("Données insérées avec succès");
-            });
+            await pool.promise().query(sql, values).then(() => {
+                return res.json("Inscription réussie")
+            })
         });
+    }).catch((err) => {
+        console.error("Erreur lors de la vérification de l'email:", err);
+        return res.json("Erreur: " + err.message);
     });
 });
 
@@ -111,12 +93,9 @@ app.use(restrictMiddleware);
 // post,get,push,delete//
 app.get("/patients", async (req, res) => {
     const q = "SELECT * from patients WHERE user_id = ? ORDER BY id DESC";
-    await dbQuery(q, [req.user.id], (err, data) => {
-        if (err) {
-            console.log(err);
-            return res.json(err);
-        }
-        return res.json(data);
+    await pool.promise().query(q, [req.user.id]).then(([data]) => res.json(data)).catch((err) => {
+        console.log(err);
+        return res.json(err);
     })
 })
 app.post("/patients", async (req, res) => {
@@ -127,27 +106,16 @@ app.post("/patients", async (req, res) => {
     const date_pre = req.body.date_pre;
     const date_ret_result = req.body.date_ret_result;
     const val_cv = req.body.val_cv;
-
-    await dbQuery(
-        "INSERT INTO patients (user_id, n_national, ts, sexe, age, date_pre, date_ret_result, val_cv) VALUES(?, ?, ?, ?, ?, ?, ?, ?)",
-        [req.user.id, n_national, ts, sexe, age, date_pre, date_ret_result, val_cv],
-        (err, result) => {
-            if (err) {
-                console.log(err);
-            } else {
-                res.send("you have registered successfully");
-            }
-        })
+    const q = "INSERT INTO patients (user_id, n_national, ts, sexe, age, date_pre, date_ret_result, val_cv) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+    await pool.promise().query(q, [req.user.id, n_national, ts, sexe, age, date_pre, date_ret_result, val_cv]).then(([data]) => {
+        res.send("you have registered successfully");
+    }).catch((err) => res.json(err))
 });
 app.get("/patients/:id", async (req, res) => {
     const id = req.params.id;
-    await dbQuery("SELECT * from patients where id = ? AND user_id = ?", [id, req.user.id], (err, result) => {
-        if (err) {
-            console.log(err)
-        } else {
-            res.send(result);
-        }
-    });
+    await pool.promise().query("SELECT * from patients where id = ? AND user_id = ?", [id, req.user.id])
+        .then(([data]) => res.json(data))
+        .catch((err) => res.json(err))
 });
 app.put("/patients/:id", async (req, res) => {
     const patientId = req.params.id;
@@ -164,20 +132,14 @@ app.put("/patients/:id", async (req, res) => {
         patientId
     ];
 
-    await dbQuery(q, [...values, patientId], (err, data) => {
-        if (err) return res.send(err);
-        return res.json(data);
-    });
+    await pool.promise().query(q, [...values, patientId]).then(([data]) => res.json(data)).catch((err) => res.json(err))
 });
 
 app.delete("/patients/:id", async (req, res) => {
     const patientId = req.params.id;
     const q = "DELETE FROM patients WHERE id = ? ";
 
-    await dbQuery(q, [patientId], (err, data) => {
-        if (err) return res.json(err);
-        return res.json(data);
-    });
+    await pool.promise().query(q, [patientId]).then(([data]) => res.json(data)).catch((err) => res.json(err))
 });
 
 

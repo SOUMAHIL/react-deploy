@@ -1,10 +1,10 @@
-const {db} = require("./database");
+const {pool} = require("./database");
 
 module.exports = function (req, res, next) {
-
     const sql = "SELECT * FROM users WHERE token = ?";
-    db.query(sql, [req.headers.authorization], (err, data) => {
+    pool.query(sql, [req.headers.authorization], (err, data) => {
         if (err) {
+            res.status(401);
             console.error("Erreur lors de la vérification du token:", err);
             return res.json("Erreur");
         }
